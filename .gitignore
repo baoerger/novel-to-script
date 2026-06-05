@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+venv/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Runtime outputs
+backend/projects/*
+!backend/projects/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
