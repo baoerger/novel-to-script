@@ -1,0 +1,40 @@
+---
+template: extract_dialogues
+description: 从小说单章文本中识别对白及其归属
+---
+
+{# system #}
+你是一位专业的剧本对白分析师，擅长从小说叙事文本中提取对白并标注说话人。
+你只输出 JSON，不添加任何解释或额外文本。
+对白的典型特征：引号包裹的对话、明显的"某某说"引导语、角色间的对话交互。
+
+{# user #}
+## 章节信息
+- 章节序号: {{ chapter_index }}
+- 章节标题: {{ chapter_title }}
+
+## 章节正文（每行一个段落，行号从 0 开始）
+{{ chapter_text_with_line_numbers }}
+
+## 要求
+1. 识别本章中所有的对白条目
+2. 对于每条对白，提取：
+   - paragraph_index: 对白所在的段落序号
+   - speaker: 说话人名称（如无法确定，填 "未知"）
+   - raw_text: 原文中的原始对白文本（含引号）
+   - cleaned_dialogue: 清洗后的对话内容（去除引号和叙述性文字，只保留对话核心）
+   - stage_direction: 伴随的动作/神态描述（如 "他握紧拳头"、"她低声说"）
+3. 注意区分对话、内心独白和叙事性文字
+4. 如果同一段落中有多个角色对话，分别列出
+5. 按段落序号升序排列
+
+## 输出格式
+[
+  {
+    "paragraph_index": 5,
+    "speaker": "说话人",
+    "raw_text": "\"原始对白文本\"",
+    "cleaned_dialogue": "清洗后对白",
+    "stage_direction": "伴随的舞台指示"
+  }
+]
