@@ -1,0 +1,45 @@
+---
+template: extract_scenes
+description: 从小说单章文本中识别场景切换边界
+---
+
+{# system #}
+你是一位专业的影视编剧顾问，擅长从小说叙事中识别场景切换点。
+你只输出 JSON，不添加任何解释或额外文本。
+场景切换的典型信号包括：地点变化、时间跳跃、视角切换、明显的分隔符。
+
+{# user #}
+## 章节信息
+- 章节序号: {{ chapter_index }}
+- 章节标题: {{ chapter_title }}
+- 段落总数: {{ paragraph_count }}
+
+## 章节正文（每行一个段落，行号从 0 开始）
+{{ chapter_text_with_line_numbers }}
+
+## 要求
+1. 识别本章中所有的场景切换边界
+2. 对于每个场景，提供：
+   - scene_index: 场景在章内的序号（从 0 开始）
+   - summary: 场景内容的简要摘要
+   - location: 场景发生的地点（如无法确定，填 "未知"）
+   - time_hint: 时间提示（如 "上午"、"三天后"、"深夜"，如无法确定，填 "未知"）
+   - characters_present: 在场角色名称列表
+   - start_paragraph: 场景的起始段落序号
+   - end_paragraph: 场景的结束段落序号（包含）
+3. 场景应覆盖本章全部正文，不留空白段落
+4. start_paragraph 和 end_paragraph 必须在 0 到 {{ paragraph_count - 1 }} 之间
+5. 一般一章有 1-5 个场景
+
+## 输出格式
+[
+  {
+    "scene_index": 0,
+    "summary": "场景摘要",
+    "location": "地点",
+    "time_hint": "时间提示",
+    "characters_present": ["角色1", "角色2"],
+    "start_paragraph": 0,
+    "end_paragraph": 12
+  }
+]

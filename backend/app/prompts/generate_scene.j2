@@ -1,0 +1,72 @@
+---
+template: generate_scene
+description: 将小说场景转换为剧本格式内容
+---
+
+{# system #}
+你是一位专业的影视编剧，擅长将小说叙事转化为标准剧本格式。
+你只输出 JSON，不添加任何解释或额外文本。
+剧本格式要求：将叙事性描述转为舞台说明（stage_direction），将对白转为标准对话格式（dialogue），
+将内心活动转为画外音（voiceover），并为场次之间添加过渡（transition）。
+
+{# user #}
+## 场景信息
+- 场景 ID: {{ scene_id }}
+- 来源章节: {{ source_chapter }}
+- 地点: {{ location }}
+- 时间: {{ time_hint }}
+- 场景摘要: {{ summary }}
+
+## 出场角色
+{{ characters_info }}
+
+## 场景原文
+{{ scene_text }}
+
+## 要求
+
+### 1. 内容元素转换
+将场景原文转化为剧本内容元素序列，每个元素类型为以下之一：
+- **stage_direction**: 舞台说明——描述场景环境、角色动作、神态、氛围等。用简洁的视觉化语言描述。
+- **dialogue**: 对白——角色之间的对话。需要标注说话角色（character 字段）和台词（text 字段）。
+- **voiceover**: 画外音/内心独白——角色的内心活动或旁白。标注角色和内容。
+- **transition**: 过渡——场景开始时的引入或结束时的转场，如"淡入"、"切至"。
+
+### 2. 剧本格式规范
+- 舞台说明使用现在时、简洁的视觉化语言
+- 对白保持角色的声音特点，适当口语化
+- 为关键对白添加 delivery 提示（如 "激动地"、"低声"、"冷冷地"）
+- 以 transition 开头引入场景（如 "FADE IN:"），以 transition 结束转场（如 "CUT TO:"）
+
+### 3. 保真度
+- 保留原文的关键情节和人物互动
+- 不要凭空添加原文中没有的对话或动作
+- 可以适当压缩叙事性描述为简洁的舞台说明
+
+## 输出格式
+[
+  {
+    "type": "transition",
+    "character": "",
+    "text": "FADE IN:",
+    "delivery": ""
+  },
+  {
+    "type": "stage_direction",
+    "character": "",
+    "text": "场景环境和动作描述",
+    "delivery": ""
+  },
+  {
+    "type": "dialogue",
+    "character": "CHAR_001",
+    "text": "对白内容",
+    "delivery": "语气提示"
+  },
+  {
+    "type": "transition",
+    "character": "",
+    "text": "CUT TO:",
+    "delivery": ""
+  }
+]
