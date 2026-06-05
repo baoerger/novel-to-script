@@ -9,7 +9,10 @@
 - 所有开发分支从 `master` 切出
 - 命名格式: `pr-{序号}-{简短描述}`, 如 `pr-01-project-scaffold`
 - 每个分支对应一个独立 PR, 合并后删除分支
-
+git commit  →  git push（上传分支）→  gh pr create（创建 PR）→  网页点 Merge  →  git pull
+        ↑                                                     ↑
+   本地 → GitHub                                          GitHub 服务器上操作
+再给出提交命令时要保证这个流程
 ---
 
 ## Phase 1: 项目基础设施 (无依赖)
