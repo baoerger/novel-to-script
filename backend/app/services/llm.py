@@ -57,10 +57,20 @@ def get_client(provider: str | None = None) -> LLMClient:
 # Prompt 模板目录（相对于 backend 目录）
 _PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
+_JINJA_ENV: Environment | None = None
+
+
+def _get_jinja_env() -> Environment:
+    """获取缓存的 Jinja2 Environment 实例。"""
+    global _JINJA_ENV
+    if _JINJA_ENV is None:
+        _JINJA_ENV = Environment(loader=FileSystemLoader(str(_PROMPTS_DIR)))
+    return _JINJA_ENV
+
 
 def render_prompt(template_name: str, variables: dict) -> list[dict]:
     """加载 Jinja2 模板，注入变量，渲染为 OpenAI messages 格式。"""
-    env = Environment(loader=FileSystemLoader(str(_PROMPTS_DIR)))
+    env = _get_jinja_env()
     tpl = env.get_template(template_name)
     rendered = tpl.render(**variables)
 
