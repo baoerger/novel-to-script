@@ -11,6 +11,7 @@ from backend.app.models.consolidated import (
     ConsolidatedCharacter,
     TimelineScene,
 )
+from backend.app.models.task import TaskInfo, TaskStatus
 from backend.app.models.script import (
     AdaptationNote,
     CharacterRelation,
@@ -28,6 +29,8 @@ from backend.app.models.script import (
 __all__ = [
     "NovelChapter",
     "NovelText",
+    "TaskInfo",
+    "TaskStatus",
     "ExtractedCharacter",
     "SceneBoundary",
     "DialogueEntry",
