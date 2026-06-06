@@ -9,6 +9,7 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from backend.app.config import app_config
 from backend.app.models.task import TaskInfo
@@ -77,6 +78,35 @@ async def convert_novel(
     )
 
     return task
+
+
+@app.get("/api/convert/{task_id}", response_model=TaskInfo)
+async def get_task_status(task_id: str):
+    task = get_task_manager().get(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"任务不存在: {task_id}")
+    return task
+
+
+@app.get("/api/convert/{task_id}/download")
+async def download_script(task_id: str):
+    task = get_task_manager().get(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"任务不存在: {task_id}")
+    if task.status not in ("completed",):
+        raise HTTPException(status_code=409, detail="任务尚未完成")
+
+    file_path = Path(task.result_path)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="输出文件不存在")
+
+    filename = file_path.name
+    return FileResponse(
+        path=str(file_path),
+        media_type="application/x-yaml",
+        filename=filename,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/health")
