@@ -1,6 +1,8 @@
 import re
 from pathlib import Path
 
+from docx import Document
+
 from backend.app.models.input import NovelChapter, NovelText
 
 
@@ -68,3 +70,90 @@ def _split_by_matches(text: str, matches: list[re.Match]) -> list[NovelChapter]:
         )
 
     return chapters
+
+
+def parse_docx(file_path: str) -> NovelText:
+    """从 .docx 文件中提取章节文本为 NovelText。
+
+    优先使用 Word 标题样式识别章节边界，降级时回退到正则匹配。
+    """
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"文件不存在: {file_path}")
+    if path.suffix.lower() != ".docx":
+        raise ValueError(f"不支持的文件格式: {path.suffix}，仅支持 .docx")
+
+    title = _infer_title(path)
+    doc = Document(file_path)
+
+    # 提取所有段落文本及样式信息
+    paragraphs = []
+    for para in doc.paragraphs:
+        text = para.text.strip()
+        if not text:
+            continue
+        is_heading = para.style.name.startswith("Heading") if para.style else False
+        paragraphs.append((text, is_heading))
+
+    if not paragraphs:
+        return NovelText(title=title, chapters=[])
+
+    # 尝试用 Word 标题样式识别章节
+    heading_indices = [i for i, (_, is_h) in enumerate(paragraphs) if is_h]
+
+    if len(heading_indices) >= 3:
+        chapters = _build_chapters_from_indices(paragraphs, heading_indices)
+    else:
+        # 降级：用正则匹配查找章节标题
+        full_text = "\n".join(t for t, _ in paragraphs)
+        matches = list(_CHAPTER_PATTERN.finditer(full_text))
+
+        if len(matches) >= 3:
+            chapters = _split_by_matches(full_text, matches)
+        else:
+            chapters = [
+                NovelChapter(
+                    chapter_index=0,
+                    chapter_title="全文",
+                    raw_text=full_text.strip(),
+                )
+            ]
+
+    return NovelText(title=title, chapters=chapters)
+
+
+def _build_chapters_from_indices(
+    paragraphs: list[tuple[str, bool]], heading_indices: list[int]
+) -> list[NovelChapter]:
+    """根据标题样式索引构建 NovelChapter 列表。"""
+    chapters = []
+
+    for i, idx in enumerate(heading_indices):
+        chapter_title = paragraphs[idx][0]
+        start = idx + 1
+        end = heading_indices[i + 1] if i + 1 < len(heading_indices) else len(paragraphs)
+        raw_text = "\n".join(t for t, _ in paragraphs[start:end]).strip()
+
+        chapters.append(
+            NovelChapter(
+                chapter_index=i,
+                chapter_title=chapter_title,
+                raw_text=raw_text,
+            )
+        )
+
+    return chapters
+
+
+def parse_file(file_path: str) -> NovelText:
+    """统一的文件解析入口，根据扩展名分发到对应的解析器。
+
+    支持格式: .txt, .text, .docx
+    """
+    suffix = Path(file_path).suffix.lower()
+    if suffix in (".txt", ".text"):
+        return parse_txt(file_path)
+    elif suffix == ".docx":
+        return parse_docx(file_path)
+    else:
+        raise ValueError(f"不支持的文件格式: {suffix}，支持: .txt, .docx")
