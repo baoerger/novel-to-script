@@ -1,3 +1,5 @@
+import logging
+import time
 from pathlib import Path
 
 from fastapi import (
@@ -6,16 +8,19 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Request,
     UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from backend.app.config import app_config
 from backend.app.models.task import TaskInfo
 from backend.app.services.parser import parse_file
 from backend.app.services.pipeline import run_conversion
 from backend.app.services.task_manager import get_task_manager
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="AI 小说转剧本工具",
@@ -30,6 +35,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception("未处理的异常: %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "服务器内部错误"},
+    )
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    duration_ms = (time.perf_counter() - start) * 1000
+    logger.info(
+        "%s %s → %d (%.1fms)",
+        request.method, request.url.path, response.status_code, duration_ms,
+    )
+    return response
 
 
 @app.post("/api/convert", response_model=TaskInfo)
