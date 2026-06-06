@@ -52,6 +52,7 @@ class AppConfig:
     projects_dir: str = os.getenv("PROJECTS_DIR", "./projects")
     max_chapters: int = int(os.getenv("MAX_CHAPTERS", "100"))
     max_tokens_per_chapter: int = int(os.getenv("MAX_TOKENS_PER_CHAPTER", "15000"))
+    max_upload_size: int = int(os.getenv("MAX_UPLOAD_SIZE", str(10 * 1024 * 1024)))
     supported_extensions: tuple = (".txt", ".docx")
 
 
