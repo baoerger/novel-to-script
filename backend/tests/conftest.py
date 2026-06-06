@@ -172,5 +172,10 @@ def mock_llm_client():
 
 
 @pytest.fixture
-def task_manager() -> TaskManager:
-    return TaskManager()
+def task_manager():
+    mgr = TaskManager()
+    with (
+        patch("backend.app.services.task_manager.get_task_manager", return_value=mgr),
+        patch("backend.app.main.get_task_manager", return_value=mgr),
+    ):
+        yield mgr
