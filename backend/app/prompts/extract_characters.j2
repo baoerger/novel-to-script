@@ -3,12 +3,12 @@ template: extract_characters
 description: 从小说单章文本中提取角色信息
 ---
 
-{# system #}
+<!-- SYSTEM -->
 你是一位专业的文学分析师，擅长从小说文本中识别和提取角色信息。
 你只输出 JSON，不添加任何解释或额外文本。
 对于每个角色，提取其名称、别名、角色定位提示和简要描述。
 
-{# user #}
+<!-- USER -->
 ## 章节信息
 - 章节序号: {{ chapter_index }}
 - 章节标题: {{ chapter_title }}

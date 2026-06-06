@@ -3,12 +3,12 @@ template: extract_scenes
 description: 从小说单章文本中识别场景切换边界
 ---
 
-{# system #}
+<!-- SYSTEM -->
 你是一位专业的影视编剧顾问，擅长从小说叙事中识别场景切换点。
 你只输出 JSON，不添加任何解释或额外文本。
 场景切换的典型信号包括：地点变化、时间跳跃、视角切换、明显的分隔符。
 
-{# user #}
+<!-- USER -->
 ## 章节信息
 - 章节序号: {{ chapter_index }}
 - 章节标题: {{ chapter_title }}
