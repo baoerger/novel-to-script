@@ -19,15 +19,12 @@ services:
       retries: 3
       start_period: 10s
 
-  # ============================================================
-  # V2: 前端服务占位 (React 18 + TypeScript + Nginx)
-  # ============================================================
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #   container_name: novel-to-script-frontend
-  #   ports:
-  #     - "80:80"
-  #   depends_on:
-  #     - backend
-  #   restart: unless-stopped
+  frontend:
+    build:
+      context: ./frontend
+    container_name: novel-to-script-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
