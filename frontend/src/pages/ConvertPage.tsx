@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import FileUpload from '../components/FileUpload'
 import ProgressBar from '../components/ProgressBar'
 import { uploadFile, getTaskStatus, getDownloadUrl, getReportUrl } from '../services/api'
@@ -117,6 +118,12 @@ export default function ConvertPage() {
               >
                 下载报告
               </a>
+              <Link
+                to={`/preview/${task.task_id}`}
+                className="flex-1 text-center py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
+              >
+                在线预览
+              </Link>
             </div>
           )}
 
