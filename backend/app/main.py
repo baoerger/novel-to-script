@@ -189,6 +189,27 @@ async def get_chapter_preview(task_id: str):
     )
 
 
+@app.get("/api/convert/{task_id}/report")
+async def download_report(task_id: str):
+    task = get_task_manager().get(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"任务不存在: {task_id}")
+    if task.status not in ("completed",):
+        raise HTTPException(status_code=409, detail="任务尚未完成")
+
+    yaml_path = Path(task.result_path)
+    report_path = yaml_path.with_name(yaml_path.stem + "_report.md")
+    if not report_path.exists():
+        raise HTTPException(status_code=404, detail="报告文件不存在")
+
+    return FileResponse(
+        path=str(report_path),
+        media_type="text/markdown",
+        filename=report_path.name,
+        headers={"Content-Disposition": f'attachment; filename="{report_path.name}"'},
+    )
+
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}

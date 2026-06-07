@@ -27,6 +27,7 @@ from backend.app.services.consolidate import (
 from backend.app.services.orchestrator import analyze_chapter
 from backend.app.services.qa_agent import qa_check
 from backend.app.services.relationship_timeline import process_consolidated
+from backend.app.services.reporter import generate_report
 from backend.app.services.scene_generator import generate_scene
 from backend.app.services.task_manager import TaskManager
 from backend.app.services.yaml_writer import save_script
@@ -91,10 +92,22 @@ def run_conversion(
         result_path = output_dir / f"{_safe_filename(novel_text.title)}.yaml"
         save_script(script, result_path)
 
+        # ── 生成质量报告 ──
+        duration = time.perf_counter() - total_start
+        tokens = _estimate_total_tokens(all_chapters)
+        report_md = generate_report(
+            script=script,
+            total_duration_s=duration,
+            total_tokens=tokens,
+            chapter_count=len(novel_text.chapters),
+        )
+        report_path = output_dir / f"{_safe_filename(novel_text.title)}_report.md"
+        report_path.write_text(report_md, encoding="utf-8")
+
         task_manager.set_completed(task_id, str(result_path))
         logger.info(
-            "转换完成: %s → %s (总耗时 %.1fs)",
-            novel_text.title, result_path, time.perf_counter() - total_start,
+            "转换完成: %s → %s (总耗时 %.1fs, 报告: %s)",
+            novel_text.title, result_path, duration, report_path,
         )
         return script
 
@@ -397,6 +410,14 @@ def _safe_filename(title: str) -> str:
     for ch in unsafe:
         result = result.replace(ch, "_")
     return result.strip()[:100]
+
+
+def _estimate_total_tokens(chapters) -> int:
+    """粗略估算所有章节的总 Token 数（中文: 字符数 × 1.5）。"""
+    total = 0
+    for ch in chapters:
+        total += int(len(ch.raw_text) * 1.5)
+    return total
 
 
 def _build_source_mapping(timeline) -> list[SourceMapping]:
