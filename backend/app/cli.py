@@ -5,9 +5,9 @@ import threading
 import time
 from pathlib import Path
 
-from backend.app.services.parser import parse_file
-from backend.app.services.pipeline import run_conversion
-from backend.app.services.task_manager import TaskManager
+from app.services.parser import parse_file
+from app.services.pipeline import run_conversion
+from app.services.task_manager import TaskManager
 
 
 def main():

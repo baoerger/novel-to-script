@@ -3,7 +3,7 @@
 质检不阻塞转换流程，仅生成 AdaptationNote 列表供用户参考。
 """
 
-from backend.app.models.script import (
+from app.models.script import (
     AdaptationNote,
     ContentType,
     Script,

@@ -1,8 +1,8 @@
 import logging
 
-from backend.app.models.input import NovelChapter
-from backend.app.models.analysis import DialogueEntry
-from backend.app.services.llm import structured_call
+from app.models.input import NovelChapter
+from app.models.analysis import DialogueEntry
+from app.services.llm import structured_call
 
 logger = logging.getLogger(__name__)
 

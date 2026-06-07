@@ -3,7 +3,7 @@ from pathlib import Path
 
 import yaml
 
-from backend.app.models.script import Script
+from app.models.script import Script
 
 logger = logging.getLogger(__name__)
 

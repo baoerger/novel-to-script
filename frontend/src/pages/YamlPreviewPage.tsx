@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Editor, { type OnMount } from '@monaco-editor/react'
 import * as yaml from 'js-yaml'
+import { useTaskContext } from '../hooks/TaskContext'
 
 interface OutlineItem {
   act: number
@@ -57,8 +58,9 @@ function extractOutline(text: string): OutlineItem[] {
 export default function YamlPreviewPage() {
   const { taskId } = useParams<{ taskId?: string }>()
   const navigate = useNavigate()
+  const { taskId: contextTaskId } = useTaskContext()
 
-  const [inputId, setInputId] = useState(taskId ?? '')
+  const [inputId, setInputId] = useState(taskId ?? contextTaskId ?? '')
   const [yamlText, setYamlText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

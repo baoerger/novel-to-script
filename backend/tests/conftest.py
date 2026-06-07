@@ -3,15 +3,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from backend.app.models.analysis import ChapterAnalysis, ExtractedCharacter, SceneBoundary
-from backend.app.models.consolidated import (
+from app.models.analysis import ChapterAnalysis, ExtractedCharacter, SceneBoundary
+from app.models.consolidated import (
     CharacterRelationship,
     ConsolidatedAnalysis,
     ConsolidatedCharacter,
     TimelineScene,
 )
-from backend.app.models.input import NovelChapter, NovelText
-from backend.app.services.task_manager import TaskManager
+from app.models.input import NovelChapter, NovelText
+from app.services.task_manager import TaskManager
 
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"

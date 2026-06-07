@@ -4,9 +4,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
-from backend.app.models.input import NovelText
-from backend.app.models.analysis import ChapterAnalysis
-from backend.app.models.script import (
+from app.models.input import NovelText
+from app.models.analysis import ChapterAnalysis
+from app.models.script import (
     AdaptationNote,
     CharacterRelation,
     Script,
@@ -17,20 +17,20 @@ from backend.app.models.script import (
     Setting,
     SourceMapping,
 )
-from backend.app.services.checkpoint import CheckpointManager
-from backend.app.services.chunker import split_long_chapter
-from backend.app.services.consolidate import (
+from app.services.checkpoint import CheckpointManager
+from app.services.chunker import split_long_chapter
+from app.services.consolidate import (
     extract_relationships,
     filter_trivial_minors,
     merge_and_consolidate,
 )
-from backend.app.services.orchestrator import analyze_chapter
-from backend.app.services.qa_agent import qa_check
-from backend.app.services.relationship_timeline import process_consolidated
-from backend.app.services.reporter import generate_report
-from backend.app.services.scene_generator import generate_scene
-from backend.app.services.task_manager import TaskManager
-from backend.app.services.yaml_writer import save_script
+from app.services.orchestrator import analyze_chapter
+from app.services.qa_agent import qa_check
+from app.services.relationship_timeline import process_consolidated
+from app.services.reporter import generate_report
+from app.services.scene_generator import generate_scene
+from app.services.task_manager import TaskManager
+from app.services.yaml_writer import save_script
 
 logger = logging.getLogger(__name__)
 

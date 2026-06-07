@@ -16,11 +16,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
-from backend.app.config import app_config
-from backend.app.models.task import TaskInfo
-from backend.app.services.parser import parse_file
-from backend.app.services.pipeline import run_conversion
-from backend.app.services.task_manager import get_task_manager
+from app.config import app_config
+from app.models.task import TaskInfo
+from app.services.parser import parse_file
+from app.services.pipeline import run_conversion
+from app.services.task_manager import get_task_manager
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +154,6 @@ async def download_script(task_id: str):
         path=str(file_path),
         media_type="application/x-yaml",
         filename=filename,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
@@ -206,7 +205,6 @@ async def download_report(task_id: str):
         path=str(report_path),
         media_type="text/markdown",
         filename=report_path.name,
-        headers={"Content-Disposition": f'attachment; filename="{report_path.name}"'},
     )
 
 
