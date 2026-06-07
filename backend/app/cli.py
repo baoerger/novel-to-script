@@ -59,6 +59,11 @@ def main():
     output_dir = output_path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # 中间结果目录：按书名命名（确定性，同一本书多次运行复用缓存）
+    safe_title = novel_text.title.replace("/", "_").replace("\\", "_")[:50]
+    task_dir = output_dir / f".checkpoints_{safe_title}"
+    task_dir.mkdir(parents=True, exist_ok=True)
+
     start_time = time.perf_counter()
 
     if args.verbose:
@@ -68,7 +73,7 @@ def main():
                 novel_text=novel_text,
                 task_manager=task_manager,
                 task_id=task_id,
-                output_dir=output_dir,
+                output_dir=task_dir,
             )
 
         thread = threading.Thread(target=_run)
@@ -94,7 +99,7 @@ def main():
             novel_text=novel_text,
             task_manager=task_manager,
             task_id=task_id,
-            output_dir=output_dir,
+            output_dir=task_dir,
         )
 
     elapsed = time.perf_counter() - start_time

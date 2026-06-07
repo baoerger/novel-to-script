@@ -1,10 +1,12 @@
 import json
 import logging
+import re
 from pathlib import Path
+from typing import get_origin
 
 from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from backend.app.config import llm_config
 
@@ -96,9 +98,9 @@ def render_prompt(template_name: str, variables: dict) -> list[dict]:
 def structured_call(
     template_name: str,
     variables: dict,
-    output_model: type[BaseModel],
+    output_model: type[BaseModel] | type,
     max_retries: int | None = None,
-) -> BaseModel:
+) -> BaseModel | list:
     """LLM 结构化输出：模板渲染 → JSON mode → Pydantic 校验 → 重试降级。
 
     流程:
@@ -144,10 +146,17 @@ def _try_call(
     client: LLMClient,
     messages: list[dict],
     model: str,
-    output_model: type[BaseModel],
+    output_model: type[BaseModel] | type,
     errors: list[str],
-) -> BaseModel:
-    """单次 LLM 调用 + JSON 解析 + Pydantic 校验。"""
+) -> BaseModel | list:
+    """单次 LLM 调用 + JSON 解析 + Pydantic 校验。
+
+    支持两种 output_model:
+    - Pydantic BaseModel 子类：用 model_validate 校验
+    - list[BaseModel] 泛型：用 TypeAdapter 校验
+
+    在 json.loads 之前先对 LLM 原始响应做容错清洗。
+    """
     response = client.chat(
         messages=messages,
         model=model,
@@ -155,15 +164,103 @@ def _try_call(
     )
 
     content = client.extract_content(response)
-    data = json.loads(content)
+    data = _parse_json_with_repair(content)
 
-    # 如果输出是数组包裹的对象，取第一个元素
-    if isinstance(data, list):
-        if len(data) == 0:
-            raise ValueError("LLM 返回空数组")
-        data = data[0]
+    origin = get_origin(output_model)
+    if origin is list:
+        adapter = TypeAdapter(output_model)
+        return adapter.validate_python(data)
+    else:
+        if isinstance(data, list):
+            if len(data) == 0:
+                raise ValueError("LLM 返回空数组")
+            data = data[0]
+        return output_model.model_validate(data)
 
-    return output_model.model_validate(data)
+
+def _parse_json_with_repair(raw: str) -> dict | list:
+    """对 LLM 原始响应做容错清洗后再 json.loads。
+
+    按顺序尝试:
+    1. 提取 markdown code block（```json ... ```）
+    2. 直接 json.loads(strict=False)
+    3. 修复控制字符后 json.loads
+    4. 修复尾逗号后 json.loads
+    全部失败则抛出原始错误。
+    """
+    if not raw or not raw.strip():
+        raise json.JSONDecodeError("LLM 返回空响应", "", 0)
+
+    # Step 1: 提取 markdown code block
+    cleaned = raw.strip()
+    md_match = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", cleaned, re.DOTALL)
+    if md_match:
+        cleaned = md_match.group(1).strip()
+
+    # Step 2: 直接解析（strict=False 允许控制字符）
+    try:
+        return json.loads(cleaned, strict=False)
+    except json.JSONDecodeError:
+        pass
+
+    # Step 3: 修复未转义的控制字符（\n \t \r 等）
+    try:
+        repaired = _escape_control_chars_in_strings(cleaned)
+        return json.loads(repaired, strict=False)
+    except json.JSONDecodeError:
+        pass
+
+    # Step 4: 修复尾逗号（最外层对象/数组）
+    try:
+        repaired = re.sub(r",\s*([}\]])", r"\1", cleaned)
+        return json.loads(repaired, strict=False)
+    except json.JSONDecodeError:
+        pass
+
+    # 全部失败，抛出带上下文的错误
+    preview = cleaned[:200] if len(cleaned) > 200 else cleaned
+    raise json.JSONDecodeError(
+        f"JSON 解析失败，响应预览: {preview}",
+        cleaned,
+        0,
+    )
+
+
+def _escape_control_chars_in_strings(text: str) -> str:
+    """修复 JSON 字符串值中未转义的控制字符。
+
+    扫描 JSON 结构，在字符串值内将字面换行/制表符替换为转义形式。
+    """
+    result = []
+    in_string = False
+    escape_next = False
+    for ch in text:
+        if escape_next:
+            result.append(ch)
+            escape_next = False
+            continue
+        if ch == "\\":
+            result.append(ch)
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            result.append(ch)
+            continue
+        if in_string:
+            if ch == "\n":
+                result.append("\\n")
+            elif ch == "\r":
+                result.append("\\r")
+            elif ch == "\t":
+                result.append("\\t")
+            elif ord(ch) < 0x20:
+                result.append(f"\\u{ord(ch):04x}")
+            else:
+                result.append(ch)
+        else:
+            result.append(ch)
+    return "".join(result)
 
 
 def _format_error(e: Exception) -> str:
@@ -174,13 +271,32 @@ def _format_error(e: Exception) -> str:
 
 
 def _inject_errors(messages: list[dict], errors: list[str]) -> list[dict]:
-    """将校验错误注入到消息列表中作为修正提示。"""
-    error_text = "\n".join(f"- {e}" for e in errors)
+    """将校验错误注入到消息列表中，给出精确修正指示。"""
+    latest = errors[-1] if errors else "未知错误"
+
+    # 根据错误类型给出针对性指导
+    if "Invalid control character" in latest or "control character" in latest.lower():
+        hint = "JSON 字符串值中包含未经转义的换行符或控制字符。请将所有字符串内的换行替换为 \\\\n，制表符替换为 \\\\t。"
+    elif "Expecting ',' delimiter" in latest or "Expecting value" in latest:
+        hint = "JSON 格式错误：可能缺少逗号、多余逗号、或缺少值。请检查每个对象的花括号配对和逗号位置。"
+    elif "Expecting property name" in latest:
+        hint = "JSON 对象中多了一个尾逗号。请删除对象/数组最后一个元素后面的逗号。"
+    elif "Unterminated string" in latest:
+        hint = "JSON 中有未闭合的字符串引号。请检查所有字符串是否以双引号开始和结束。"
+    elif "空" in latest or "empty" in latest.lower():
+        hint = "输出为空。请务必返回完整的 JSON，即使没有匹配数据也要返回空数组 []。"
+    elif "ValidationError" in latest or "validation error" in latest.lower():
+        hint = "JSON 结构正确但字段类型不匹配。请仔细检查每个字段的类型定义并修正。"
+    else:
+        hint = "请仔细检查 JSON 格式：确保所有字符串用双引号包裹、控制字符已转义、数组/对象括号正确配对。"
+
     correction = {
         "role": "user",
         "content": (
-            f"上次输出的 JSON 校验失败，错误如下：\n{error_text}\n"
-            "请修正错误后重新输出符合格式要求的 JSON。"
+            f"上次输出的 JSON 校验失败。\n"
+            f"具体错误: {latest}\n"
+            f"修正方法: {hint}\n"
+            "请修正后重新输出符合格式要求的 JSON。"
         ),
     }
     return messages + [correction]

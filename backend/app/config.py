@@ -8,7 +8,7 @@ try:
 
     _env_path = Path(__file__).resolve().parent.parent / ".env"
     if _env_path.exists():
-        load_dotenv(_env_path)
+        load_dotenv(_env_path, override=True)
 except ImportError:
     pass
 
