@@ -1,3 +1,4 @@
+import json
 import re
 from pathlib import Path
 
@@ -354,12 +355,16 @@ def _build_chapters_from_indices(
     return chapters
 
 
-def parse_file(file_path: str) -> NovelText:
+def parse_file(file_path: str, chapter_markers: str = "") -> NovelText:
     """统一的文件解析入口，根据扩展名分发到对应的解析器。
 
     支持格式: .txt, .text, .docx
     三级章节检测: 标准正则 → 宽泛正则 → 语义分割 → 全文单章兜底
+    当 chapter_markers 非空时，跳过自动检测，使用用户指定的标记分割。
     """
+    if chapter_markers:
+        return _parse_with_markers(file_path, chapter_markers)
+
     suffix = Path(file_path).suffix.lower()
     if suffix in (".txt", ".text"):
         return parse_txt(file_path)
@@ -367,3 +372,91 @@ def parse_file(file_path: str) -> NovelText:
         return parse_docx(file_path)
     else:
         raise ValueError(f"不支持的文件格式: {suffix}，支持: .txt, .docx")
+
+
+# ═══════════════════════════════════════════════════════════════
+# 手动章节标注
+# ═══════════════════════════════════════════════════════════════
+
+def _parse_with_markers(file_path: str, markers_json: str) -> NovelText:
+    """使用用户指定的章节标记解析文件。
+
+    markers_json 支持两种格式：
+    1. 分隔符列表: ["第一章", "第二章", ...]
+       → 在文本中搜索每个分隔符，按匹配位置切分
+    2. 行号范围: [{"title": "第一章", "start": 0, "end": 50}, ...]
+       → 按行号范围切分（start/end 为行索引，end 不包含在内）
+    """
+    try:
+        markers = json.loads(markers_json)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"chapter_markers JSON 解析失败: {e}")
+
+    if not isinstance(markers, list) or len(markers) == 0:
+        raise ValueError("chapter_markers 必须是非空数组")
+
+    path = Path(file_path)
+    if path.suffix.lower() == ".docx":
+        raw_text = _read_docx_text(path)
+    else:
+        raw_text = _read_text_with_fallback(path)
+
+    title = _infer_title(path)
+
+    if isinstance(markers[0], str):
+        return _split_by_delimiters(raw_text, markers, title)
+    elif isinstance(markers[0], dict):
+        return _split_by_line_ranges(raw_text, markers, title)
+    else:
+        raise ValueError("chapter_markers 格式不支持，应为字符串列表或对象列表")
+
+
+def _split_by_delimiters(text: str, markers: list[str], title: str) -> NovelText:
+    """按分隔符字符串在文本中搜索并分割章节。"""
+    positions: list[tuple[int, str]] = []
+    for marker in markers:
+        pos = text.find(marker)
+        if pos >= 0:
+            positions.append((pos, marker.strip()))
+    positions.sort()
+
+    if not positions:
+        return NovelText(
+            title=title,
+            chapters=[NovelChapter(chapter_index=0, chapter_title="全文", raw_text=text.strip())],
+        )
+
+    chapters: list[NovelChapter] = []
+    for i, (pos, marker_title) in enumerate(positions):
+        start = pos + len(marker_title) + 1
+        end = positions[i + 1][0] if i + 1 < len(positions) else len(text)
+        raw = text[start:end].strip()
+        chapters.append(NovelChapter(chapter_index=i, chapter_title=marker_title, raw_text=raw))
+
+    return NovelText(title=title, chapters=chapters)
+
+
+def _split_by_line_ranges(text: str, ranges: list[dict], title: str) -> NovelText:
+    """按行号范围分割章节。每项的 start/end 为行索引，end 不包含在内。"""
+    lines = text.split("\n")
+    chapters: list[NovelChapter] = []
+
+    for i, r in enumerate(ranges):
+        start_line = max(0, int(r.get("start", 0)))
+        end_line = min(len(lines), int(r.get("end", len(lines))))
+        chapter_title = str(r.get("title", f"第{i + 1}章"))
+        raw = "\n".join(lines[start_line:end_line]).strip()
+        if raw:
+            chapters.append(NovelChapter(chapter_index=i, chapter_title=chapter_title, raw_text=raw))
+
+    if not chapters:
+        chapters = [NovelChapter(chapter_index=0, chapter_title="全文", raw_text=text.strip())]
+
+    return NovelText(title=title, chapters=chapters)
+
+
+def _read_docx_text(path: Path) -> str:
+    """从 .docx 提取纯文本（不尝试章节识别）。"""
+    doc = Document(str(path))
+    paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+    return "\n".join(paragraphs)
