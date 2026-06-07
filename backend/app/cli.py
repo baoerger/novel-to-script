@@ -59,8 +59,9 @@ def main():
     output_dir = output_path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 中间结果目录：与输出文件同目录，按书名 + task_id 命名
-    task_dir = output_dir / f".checkpoints_{novel_text.title}_{task_id}"
+    # 中间结果目录：按书名命名（确定性，同一本书多次运行复用缓存）
+    safe_title = novel_text.title.replace("/", "_").replace("\\", "_")[:50]
+    task_dir = output_dir / f".checkpoints_{safe_title}"
     task_dir.mkdir(parents=True, exist_ok=True)
 
     start_time = time.perf_counter()

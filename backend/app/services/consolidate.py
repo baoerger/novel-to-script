@@ -96,12 +96,40 @@ def extract_relationships(
         logger.warning("关系提取: 无有效共现数据")
         return []
 
+    # 构建带角色信息的共现数据
+    id_to_info: dict[str, dict] = {
+        c.id: {"name": c.name, "role": c.role}
+        for c in consolidated.characters
+    }
+    # 在共现数据中附加角色名称和角色类型
+    enriched = []
+    for entry in cooccurrence:
+        char_id = entry["char_id"]
+        info = id_to_info.get(char_id, {})
+        enriched_others = []
+        for other in entry["co_occurs_with"]:
+            other_info = id_to_info.get(other["char_id"], {})
+            enriched_others.append({
+                "char_id": other["char_id"],
+                "name": other_info.get("name", other["char_id"]),
+                "role": other_info.get("role", "minor"),
+                "chapters": other["chapters"],
+                "count": other["count"],
+            })
+        enriched.append({
+            "char_id": char_id,
+            "name": info.get("name", char_id),
+            "role": info.get("role", "minor"),
+            "co_occurs_with": enriched_others,
+        })
+
     characters_json = json.dumps(
         [
             {
                 "id": c.id,
                 "name": c.name,
                 "role": c.role,
+                "archetype": c.archetype,
                 "description": c.description[:120],
             }
             for c in consolidated.characters
@@ -109,7 +137,7 @@ def extract_relationships(
         ensure_ascii=False,
         indent=2,
     )
-    cooccurrence_json = json.dumps(cooccurrence, ensure_ascii=False, indent=2)
+    cooccurrence_json = json.dumps(enriched, ensure_ascii=False, indent=2)
 
     variables = {
         "characters_json": characters_json,
@@ -131,6 +159,47 @@ def extract_relationships(
         return []
 
 
+def filter_trivial_minors(consolidated: ConsolidatedAnalysis) -> ConsolidatedAnalysis:
+    """过滤掉信息量过少的龙套角色。
+
+    满足以下全部条件的视为冗余龙套，从角色列表和时间线中移除：
+    - role == "minor"
+    - description 少于 30 个字符
+    - 只在 1 个章节中出现
+
+    同时清理时间线场景中的角色引用。
+    """
+    if not consolidated.characters:
+        return consolidated
+
+    keep_ids: set[str] = set()
+    removed_ids: set[str] = set()
+
+    for c in consolidated.characters:
+        if (
+            c.role == "minor"
+            and len(c.description) < 30
+            and len(c.appears_in_chapters) <= 1
+        ):
+            removed_ids.add(c.id)
+        else:
+            keep_ids.add(c.id)
+
+    if removed_ids:
+        consolidated.characters = [
+            c for c in consolidated.characters if c.id in keep_ids
+        ]
+        for ts in consolidated.timeline:
+            ts.characters = [cid for cid in ts.characters if cid in keep_ids]
+        logger.info(
+            "过滤龙套角色: 移除 %d 个 (保留 %d 个)",
+            len(removed_ids),
+            len(keep_ids),
+        )
+
+    return consolidated
+
+
 def _build_name_id_map(consolidated: ConsolidatedAnalysis) -> dict[str, str]:
     """构建角色名称/别名 → 角色 ID 的映射。"""
     mapping: dict[str, str] = {}
@@ -147,8 +216,9 @@ def _build_cooccurrence(
 ) -> list[dict]:
     """从章节分析构建角色共现数据。
 
-    返回格式：[{"char_a": "CHAR_047", "char_b": "CHAR_063", "chapters": [0,1,2], "count": 15}, ...]
-    只保留至少一方不是 minor 的共现对，且至少共现 2 次。
+    按角色组织共现对，每个角色列出其所有共现者及频次。
+    返回格式适合 LLM 逐角色推断关系网络。
+    只保留至少共现 2 次的配对，且跳过两个都是 minor 的组合。
     """
     # 收集每章每场的角色 ID 集合
     chapter_scenes: dict[int, list[set[str]]] = defaultdict(list)
@@ -162,38 +232,50 @@ def _build_cooccurrence(
             if char_ids:
                 chapter_scenes[ch.chapter_index].append(char_ids)
 
-    # 统计共现
+    # 统计共现：(char_a, char_b) → {chapters: set, count: int}
     pair_data: dict[tuple[str, str], dict] = {}
     for ch_idx, scenes in chapter_scenes.items():
-        seen_in_chapter: set[tuple[str, str]] = set()
+        seen: set[tuple[str, str]] = set()
         for char_ids in scenes:
             ids = sorted(char_ids)
             for i in range(len(ids)):
                 for j in range(i + 1, len(ids)):
                     pair = (ids[i], ids[j])
                     if pair not in pair_data:
-                        pair_data[pair] = {
-                            "char_a": ids[i],
-                            "char_b": ids[j],
-                            "chapters": set(),
-                            "count": 0,
-                        }
+                        pair_data[pair] = {"chapters": set(), "count": 0}
                     pair_data[pair]["count"] += 1
-                    seen_in_chapter.add(pair)
-        for pair in seen_in_chapter:
-            if pair in pair_data:
-                pair_data[pair]["chapters"].add(ch_idx)
+                    seen.add(pair)
+        for pair in seen:
+            pair_data[pair]["chapters"].add(ch_idx)
 
-    # 过滤：至少共现 2 次
+    # 整理为角色→共现者列表格式
+    per_char: dict[str, list[dict]] = defaultdict(list)
+    for (a, b), data in pair_data.items():
+        if data["count"] < 2:
+            continue
+        per_char[a].append({
+            "char_id": b,
+            "chapters": sorted(data["chapters"]),
+            "count": data["count"],
+        })
+        per_char[b].append({
+            "char_id": a,
+            "chapters": sorted(data["chapters"]),
+            "count": data["count"],
+        })
+
+    # 转为列表，按角色重要性排序：protagonist → supporting → minor
     result = []
-    for pair, data in pair_data.items():
-        if data["count"] >= 2:
-            data["chapters"] = sorted(data["chapters"])
-            result.append(data)
+    for char_id, co_occurrences in per_char.items():
+        co_occurrences.sort(key=lambda x: x["count"], reverse=True)
+        result.append({
+            "char_id": char_id,
+            "co_occurs_with": co_occurrences,
+        })
 
-    result.sort(key=lambda x: x["count"], reverse=True)
+    result.sort(key=lambda x: len(x["co_occurs_with"]), reverse=True)
     logger.info(
-        "共现数据: %d 对角色，过滤后 %d 对",
+        "共现数据: %d 对角色 → %d 个角色有共现数据",
         len(pair_data),
         len(result),
     )

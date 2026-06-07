@@ -8,7 +8,26 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - backend/.env
+      - ./backend/.env
     volumes:
       - ./projects:/app/projects
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ============================================================
+  # V2: 前端服务占位 (React 18 + TypeScript + Nginx)
+  # ============================================================
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #   container_name: novel-to-script-frontend
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - backend
+  #   restart: unless-stopped

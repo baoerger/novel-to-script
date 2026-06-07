@@ -67,13 +67,18 @@ def split_long_chapter(
 ) -> tuple[list[NovelChapter], ChunkSummary]:
     """将超长章节按段落边界切分为多个子章。
 
-    仅在 chapter.token_estimate > max_tokens 时执行分片。
+    先补全 token_estimate（如果解析器未计算），再判断是否需要分片。
+    仅在 token_estimate > max_tokens 时执行分片。
     保证不在段落中间切断。
 
     Returns:
         (sub_chapters, summary): 子章列表和分片摘要。
         如果不需要分片，返回原章单元素列表。
     """
+    # 确保 token 估算已执行（解析器阶段可能跳过）
+    if not chapter.token_estimate:
+        update_chapter_stats(chapter)
+
     if chapter.token_estimate <= max_tokens:
         summary = ChunkSummary(
             original_chapter_index=chapter.chapter_index,

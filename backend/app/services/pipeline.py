@@ -19,7 +19,11 @@ from backend.app.models.script import (
 )
 from backend.app.services.checkpoint import CheckpointManager
 from backend.app.services.chunker import split_long_chapter
-from backend.app.services.consolidate import extract_relationships, merge_and_consolidate
+from backend.app.services.consolidate import (
+    extract_relationships,
+    filter_trivial_minors,
+    merge_and_consolidate,
+)
 from backend.app.services.orchestrator import analyze_chapter
 from backend.app.services.relationship_timeline import process_consolidated
 from backend.app.services.scene_generator import generate_scene
@@ -178,6 +182,7 @@ def _phase_consolidate(ck, analyses, task_manager, task_id):
     task_manager.update_progress(task_id, 50, "跨章汇总去重中")
     consolidated = merge_and_consolidate(analyses)
     consolidated = process_consolidated(consolidated)
+    consolidated = filter_trivial_minors(consolidated)
     logger.info("Phase 3 (跨章汇总) 耗时: %.1fs", time.perf_counter() - t0)
 
     ck.save_consolidated(consolidated)

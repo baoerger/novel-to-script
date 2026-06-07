@@ -286,12 +286,17 @@ def _infer_title(path: Path) -> str:
     return path.stem
 
 
+_MAX_TITLE_LENGTH = 50
+
+
 def _split_by_matches(text: str, matches: list[re.Match]) -> list[NovelChapter]:
     """根据正则匹配位置分割正文为 NovelChapter 列表。"""
     chapters = []
 
     for i, match in enumerate(matches):
         chapter_title = match.group().strip()
+        if len(chapter_title) > _MAX_TITLE_LENGTH:
+            chapter_title = chapter_title[:_MAX_TITLE_LENGTH] + "…"
         start = match.end() + 1  # 跳过标题行
         end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
         raw_text = text[start:end].strip()
