@@ -124,6 +124,12 @@ export default function ConvertPage() {
               >
                 在线预览
               </Link>
+              <Link
+                to={`/characters/${task.task_id}`}
+                className="flex-1 text-center py-2 rounded-lg bg-violet-600 text-white font-medium hover:bg-violet-700 transition-colors"
+              >
+                角色表格
+              </Link>
             </div>
           )}
 
