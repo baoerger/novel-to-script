@@ -1,18 +1,18 @@
-from backend.app.models.input import NovelChapter, NovelText
-from backend.app.models.analysis import (
+from app.models.input import NovelChapter, NovelText
+from app.models.analysis import (
     ChapterAnalysis,
     DialogueEntry,
     ExtractedCharacter,
     SceneBoundary,
 )
-from backend.app.models.consolidated import (
+from app.models.consolidated import (
     CharacterRelationship,
     ConsolidatedAnalysis,
     ConsolidatedCharacter,
     TimelineScene,
 )
-from backend.app.models.task import TaskInfo, TaskStatus
-from backend.app.models.script import (
+from app.models.task import TaskInfo, TaskStatus
+from app.models.script import (
     AdaptationNote,
     CharacterRelation,
     ContentElement,

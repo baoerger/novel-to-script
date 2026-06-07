@@ -2,17 +2,17 @@ from unittest.mock import patch
 
 import pytest
 
-from backend.app.models.analysis import (
+from app.models.analysis import (
     ChapterAnalysis,
     DialogueEntry,
     ExtractedCharacter,
     SceneBoundary,
 )
-from backend.app.models.input import NovelChapter
-from backend.app.services.dialogue_extractor import extract_dialogues
-from backend.app.services.extractor import extract_characters
-from backend.app.services.orchestrator import analyze_chapter
-from backend.app.services.scene_detector import detect_scenes
+from app.models.input import NovelChapter
+from app.services.dialogue_extractor import extract_dialogues
+from app.services.extractor import extract_characters
+from app.services.orchestrator import analyze_chapter
+from app.services.scene_detector import detect_scenes
 
 
 def _make_char(name="张三") -> ExtractedCharacter:

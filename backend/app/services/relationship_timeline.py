@@ -1,6 +1,6 @@
 import logging
 
-from backend.app.models.consolidated import ConsolidatedAnalysis, TimelineScene
+from app.models.consolidated import ConsolidatedAnalysis, TimelineScene
 
 logger = logging.getLogger(__name__)
 

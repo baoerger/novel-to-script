@@ -20,10 +20,10 @@ import json
 import logging
 from pathlib import Path
 
-from backend.app.models.input import NovelChapter, NovelText
-from backend.app.models.analysis import ChapterAnalysis
-from backend.app.models.consolidated import ConsolidatedAnalysis
-from backend.app.models.script import Script, ScriptScene
+from app.models.input import NovelChapter, NovelText
+from app.models.analysis import ChapterAnalysis
+from app.models.consolidated import ConsolidatedAnalysis
+from app.models.script import Script, ScriptScene
 
 logger = logging.getLogger(__name__)
 

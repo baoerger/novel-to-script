@@ -4,8 +4,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from backend.app.models.input import NovelText
-from backend.app.models.task import TaskInfo, TaskStatus
+from app.models.input import NovelText
+from app.models.task import TaskInfo, TaskStatus
 
 logger = logging.getLogger(__name__)
 

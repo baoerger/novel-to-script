@@ -1,5 +1,5 @@
-from backend.app.models.input import NovelChapter
-from backend.app.services.chunker import (
+from app.models.input import NovelChapter
+from app.services.chunker import (
     estimate_tokens,
     normalize_paragraphs,
     normalize_text,

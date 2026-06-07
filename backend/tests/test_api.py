@@ -4,10 +4,10 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from backend.app.main import app
-from backend.app.config import app_config
-from backend.app.models.task import TaskStatus
-from backend.app.services.task_manager import TaskManager, get_task_manager
+from app.main import app
+from app.config import app_config
+from app.models.task import TaskStatus
+from app.services.task_manager import TaskManager, get_task_manager
 
 client = TestClient(app)
 

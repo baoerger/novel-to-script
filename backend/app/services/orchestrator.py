@@ -1,11 +1,11 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from backend.app.models.input import NovelChapter
-from backend.app.models.analysis import ChapterAnalysis
-from backend.app.services.extractor import extract_characters
-from backend.app.services.scene_detector import detect_scenes
-from backend.app.services.dialogue_extractor import extract_dialogues
+from app.models.input import NovelChapter
+from app.models.analysis import ChapterAnalysis
+from app.services.extractor import extract_characters
+from app.services.scene_detector import detect_scenes
+from app.services.dialogue_extractor import extract_dialogues
 
 logger = logging.getLogger(__name__)
 

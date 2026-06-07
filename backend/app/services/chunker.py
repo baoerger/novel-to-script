@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass, field
 
-from backend.app.models.input import NovelChapter
+from app.models.input import NovelChapter
 
 
 def normalize_text(text: str) -> str:

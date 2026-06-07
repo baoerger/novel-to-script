@@ -4,7 +4,7 @@ from pathlib import Path
 
 from docx import Document
 
-from backend.app.models.input import NovelChapter, NovelText
+from app.models.input import NovelChapter, NovelText
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -242,7 +242,10 @@ def parse_docx(file_path: str) -> NovelText:
         paragraphs.append((text, is_heading))
 
     if not paragraphs:
-        return NovelText(title=title, chapters=[])
+        return NovelText(
+            title=title,
+            chapters=[NovelChapter(chapter_index=0, chapter_title="全文", raw_text="（空文档）")],
+        )
 
     # 优先：Word 标题样式
     heading_indices = [i for i, (_, is_h) in enumerate(paragraphs) if is_h]
@@ -302,13 +305,25 @@ def _split_by_matches(text: str, matches: list[re.Match]) -> list[NovelChapter]:
         end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
         raw_text = text[start:end].strip()
 
+        if not raw_text:
+            continue
+
         chapters.append(
             NovelChapter(
-                chapter_index=i,
+                chapter_index=len(chapters),
                 chapter_title=chapter_title,
                 raw_text=raw_text,
             )
         )
+
+    if not chapters:
+        chapters = [
+            NovelChapter(
+                chapter_index=0,
+                chapter_title="全文",
+                raw_text=text.strip(),
+            )
+        ]
 
     return chapters
 
@@ -344,13 +359,26 @@ def _build_chapters_from_indices(
         end = heading_indices[i + 1] if i + 1 < len(heading_indices) else len(paragraphs)
         raw_text = "\n".join(t for t, _ in paragraphs[start:end]).strip()
 
+        if not raw_text:
+            continue
+
         chapters.append(
             NovelChapter(
-                chapter_index=i,
+                chapter_index=len(chapters),
                 chapter_title=chapter_title,
                 raw_text=raw_text,
             )
         )
+
+    if not chapters:
+        full_text = "\n".join(t for t, _ in paragraphs).strip()
+        chapters = [
+            NovelChapter(
+                chapter_index=0,
+                chapter_title="全文",
+                raw_text=full_text,
+            )
+        ]
 
     return chapters
 

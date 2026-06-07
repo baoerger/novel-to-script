@@ -2,14 +2,16 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import * as yaml from 'js-yaml'
 import type { Script, ScriptCharacter } from '../types'
+import { useTaskContext } from '../hooks/TaskContext'
 
 type SortKey = 'name' | 'role' | 'archetype'
 
 export default function CharactersPage() {
   const { taskId } = useParams<{ taskId?: string }>()
   const navigate = useNavigate()
+  const { taskId: contextTaskId } = useTaskContext()
 
-  const [inputId, setInputId] = useState(taskId ?? '')
+  const [inputId, setInputId] = useState(taskId ?? contextTaskId ?? '')
   const [characters, setCharacters] = useState<ScriptCharacter[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

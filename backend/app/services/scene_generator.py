@@ -1,7 +1,7 @@
 import logging
 
-from backend.app.models.script import ContentElement
-from backend.app.services.llm import structured_call
+from app.models.script import ContentElement
+from app.services.llm import structured_call
 
 logger = logging.getLogger(__name__)
 

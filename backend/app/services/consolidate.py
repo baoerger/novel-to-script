@@ -2,12 +2,12 @@ import json
 import logging
 from collections import defaultdict
 
-from backend.app.models.analysis import ChapterAnalysis
-from backend.app.models.consolidated import (
+from app.models.analysis import ChapterAnalysis
+from app.models.consolidated import (
     CharacterRelationship,
     ConsolidatedAnalysis,
 )
-from backend.app.services.llm import structured_call
+from app.services.llm import structured_call
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from backend.app.models.input import NovelChapter, NovelText
-from backend.app.services.parser import parse_docx, parse_file, parse_txt
+from app.models.input import NovelChapter, NovelText
+from app.services.parser import parse_docx, parse_file, parse_txt
 
 
 class TestParseTxt:

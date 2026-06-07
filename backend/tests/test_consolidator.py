@@ -1,18 +1,18 @@
 from unittest.mock import patch
 
-from backend.app.models.analysis import ChapterAnalysis, ExtractedCharacter, SceneBoundary
-from backend.app.models.consolidated import (
+from app.models.analysis import ChapterAnalysis, ExtractedCharacter, SceneBoundary
+from app.models.consolidated import (
     CharacterRelationship,
     ConsolidatedAnalysis,
     ConsolidatedCharacter,
     TimelineScene,
 )
-from backend.app.services.consolidate import (
+from app.services.consolidate import (
     _serialize_characters,
     _serialize_scenes,
     merge_and_consolidate,
 )
-from backend.app.services.relationship_timeline import (
+from app.services.relationship_timeline import (
     build_relationship_graph,
     process_consolidated,
     sort_timeline,

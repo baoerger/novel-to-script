@@ -5,7 +5,7 @@
 
 from datetime import datetime, timezone
 
-from backend.app.models.script import ContentType, Script
+from app.models.script import ContentType, Script
 
 
 def generate_report(

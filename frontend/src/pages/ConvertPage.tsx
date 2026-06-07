@@ -1,15 +1,17 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import FileUpload from '../components/FileUpload'
 import ProgressBar from '../components/ProgressBar'
 import { uploadFile, getTaskStatus, getDownloadUrl, getReportUrl } from '../services/api'
+import { useTaskContext } from '../hooks/TaskContext'
 import type { TaskInfo } from '../types'
 
 export default function ConvertPage() {
+  const { task: savedTask, setCurrentTask, updateTask, clearTask } = useTaskContext()
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
   const [chapterMarkers, setChapterMarkers] = useState('')
-  const [task, setTask] = useState<TaskInfo | null>(null)
+  const [task, setTask] = useState<TaskInfo | null>(savedTask)
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval>>()
@@ -19,6 +21,7 @@ export default function ConvertPage() {
       try {
         const info = await getTaskStatus(taskId)
         setTask(info)
+        updateTask(info)
         if (info.status === 'completed' || info.status === 'failed' || info.status === 'cancelled') {
           clearInterval(pollRef.current)
         }
@@ -26,7 +29,15 @@ export default function ConvertPage() {
         // ignore polling errors
       }
     }, 1500)
-  }, [])
+  }, [updateTask])
+
+  // 回到页面时恢复未完成任务的轮询
+  useEffect(() => {
+    if (savedTask && (savedTask.status === 'running' || savedTask.status === 'pending')) {
+      setTask(savedTask)
+      startPolling(savedTask.task_id)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleUpload = async () => {
     if (!file) return
@@ -35,13 +46,28 @@ export default function ConvertPage() {
     try {
       const info = await uploadFile(file, title || undefined, chapterMarkers || undefined)
       setTask(info)
+      setCurrentTask(info)
       startPolling(info.task_id)
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : '上传失败'
+      let msg = '上传失败'
+      if (e instanceof Error) {
+        msg = e.message
+        const axiosErr = e as { response?: { data?: { detail?: string } } }
+        if (axiosErr.response?.data?.detail) {
+          msg = axiosErr.response.data.detail
+        }
+      }
       setError(msg)
     } finally {
       setUploading(false)
     }
+  }
+
+  const handleReset = () => {
+    clearInterval(pollRef.current)
+    setTask(null)
+    setFile(null)
+    clearTask()
   }
 
   const isDone = task?.status === 'completed'
@@ -105,7 +131,7 @@ export default function ConvertPage() {
           </div>
 
           {isDone && (
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <a
                 href={getDownloadUrl(task.task_id)}
                 className="flex-1 text-center py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition-colors"
@@ -141,11 +167,7 @@ export default function ConvertPage() {
           )}
 
           <button
-            onClick={() => {
-              clearInterval(pollRef.current)
-              setTask(null)
-              setFile(null)
-            }}
+            onClick={handleReset}
             className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
           >
             重新转换

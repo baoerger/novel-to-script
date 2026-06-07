@@ -8,7 +8,7 @@ from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from backend.app.config import llm_config
+from app.config import llm_config
 
 logger = logging.getLogger(__name__)
 
