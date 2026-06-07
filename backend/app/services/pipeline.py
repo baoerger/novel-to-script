@@ -25,6 +25,7 @@ from backend.app.services.consolidate import (
     merge_and_consolidate,
 )
 from backend.app.services.orchestrator import analyze_chapter
+from backend.app.services.qa_agent import qa_check
 from backend.app.services.relationship_timeline import process_consolidated
 from backend.app.services.scene_generator import generate_scene
 from backend.app.services.task_manager import TaskManager
@@ -366,16 +367,22 @@ def _build_script(novel_text, consolidated, scenes) -> Script:
     meta.total_acts = len(acts)
 
     source_mapping = _build_source_mapping(consolidated.timeline)
-    adaptation_notes = _build_adaptation_notes(scenes)
 
-    return Script(
+    script = Script(
         meta=meta,
         characters=characters,
         character_relationships=relationships,
         acts=acts,
         source_mapping=source_mapping,
-        adaptation_notes=adaptation_notes,
+        adaptation_notes=[],
     )
+
+    # 基础检查 + AI 质检
+    notes = _build_adaptation_notes(scenes)
+    notes.extend(qa_check(script))
+    script.adaptation_notes = notes
+
+    return script
 
 
 def _build_heading(location: str, time_hint: str) -> str:
