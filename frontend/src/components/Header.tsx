@@ -11,6 +11,7 @@ export default function Header() {
           <Link to="/" className="hover:text-indigo-600 transition-colors">首页</Link>
           <Link to="/convert" className="hover:text-indigo-600 transition-colors">开始转换</Link>
           <Link to="/preview" className="hover:text-indigo-600 transition-colors">YAML 预览</Link>
+          <Link to="/characters" className="hover:text-indigo-600 transition-colors">角色表格</Link>
           <Link to="/editor" className="hover:text-indigo-600 transition-colors">剧本编辑</Link>
         </nav>
       </div>
