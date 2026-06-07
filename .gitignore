@@ -12,6 +12,7 @@ venv/
 # IDE
 .vscode/
 .idea/
+.claude/
 
 # Runtime outputs
 projects/*

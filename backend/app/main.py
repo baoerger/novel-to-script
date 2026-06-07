@@ -154,7 +154,6 @@ async def download_script(task_id: str):
         path=str(file_path),
         media_type="application/x-yaml",
         filename=filename,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
@@ -206,7 +205,6 @@ async def download_report(task_id: str):
         path=str(report_path),
         media_type="text/markdown",
         filename=report_path.name,
-        headers={"Content-Disposition": f'attachment; filename="{report_path.name}"'},
     )
 
 

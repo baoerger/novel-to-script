@@ -6,7 +6,7 @@
 
 ## Demo 视频
 
-> **视频链接**: [待填入]（请在此处放入 Bilibili / 云盘 / YouTube 等外部链接）
+> **视频链接**: [【小说转剧本demo】 https://www.bilibili.com/video/BV1fqEt6xEbV/?share_source=copy_web&vd_source=d75f0b47ea0edbf92c0dcd3c09f0ec89]（请在此处放入 Bilibili / 云盘 / YouTube 等外部链接）
 
 - 完整操作流程演示
 - 小说上传 → 实时进度 → YAML 在线预览 → 角色表格 → 剧本编辑
