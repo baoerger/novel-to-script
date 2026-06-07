@@ -1,6 +1,7 @@
 import logging
 import time
 from pathlib import Path
+from typing import Optional
 
 from fastapi import (
     BackgroundTasks,
@@ -13,6 +14,7 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, Field
 
 from backend.app.config import app_config
 from backend.app.models.task import TaskInfo
@@ -21,6 +23,24 @@ from backend.app.services.pipeline import run_conversion
 from backend.app.services.task_manager import get_task_manager
 
 logger = logging.getLogger(__name__)
+
+
+class ChapterPreview(BaseModel):
+    """章节预览（GET /api/convert/{task_id}/chapters 返回）"""
+
+    index: int = Field(description="章节序号（0 起始）")
+    title: str = Field(description="章节标题")
+    line_count: int = Field(description="行数")
+    preview: str = Field(description="正文前 200 字符预览")
+
+
+class ChapterListResponse(BaseModel):
+    """章节列表响应"""
+
+    task_id: str = Field(description="任务 ID")
+    chapter_count: int = Field(description="章节总数")
+    chapters: list[ChapterPreview] = Field(description="章节预览列表")
+
 
 app = FastAPI(
     title="AI 小说转剧本工具",
@@ -63,6 +83,7 @@ async def convert_novel(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     title: str = Form(default=""),
+    chapter_markers: str = Form(default=""),
 ):
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in app_config.supported_extensions:
@@ -88,12 +109,14 @@ async def convert_novel(
     file_path.write_bytes(contents)
 
     try:
-        novel_text = parse_file(str(file_path))
+        novel_text = parse_file(str(file_path), chapter_markers=chapter_markers)
         if title:
             novel_text.title = title
     except Exception as e:
         task_manager.set_failed(task_id, str(e))
         raise HTTPException(status_code=400, detail=f"文件解析失败: {e}")
+
+    task_manager.set_chapters(task_id, novel_text)
 
     background_tasks.add_task(
         run_conversion,
@@ -132,6 +155,37 @@ async def download_script(task_id: str):
         media_type="application/x-yaml",
         filename=filename,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/api/convert/{task_id}/chapters", response_model=ChapterListResponse)
+async def get_chapter_preview(task_id: str):
+    task_manager = get_task_manager()
+    task = task_manager.get(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"任务不存在: {task_id}")
+
+    novel_text = task_manager.get_chapters(task_id)
+    if novel_text is None:
+        url = f"/api/convert/{task_id}"
+        raise HTTPException(status_code=409, detail=f"章节尚未解析，请等待任务完成后访问 {url}")
+
+    chapters = []
+    for ch in novel_text.chapters:
+        lines = ch.raw_text.count("\n") + 1 if ch.raw_text else 0
+        chapters.append(
+            ChapterPreview(
+                index=ch.chapter_index,
+                title=ch.chapter_title,
+                line_count=lines,
+                preview=ch.raw_text[:200] if ch.raw_text else "",
+            )
+        )
+
+    return ChapterListResponse(
+        task_id=task_id,
+        chapter_count=len(chapters),
+        chapters=chapters,
     )
 
 

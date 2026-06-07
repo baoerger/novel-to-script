@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
+from backend.app.models.input import NovelText
 from backend.app.models.task import TaskInfo, TaskStatus
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ class TaskManager:
 
     def __init__(self):
         self._tasks: dict[str, TaskInfo] = {}
+        self._chapters: dict[str, NovelText] = {}
         self._lock = threading.Lock()
 
     def create(self, filename: str) -> TaskInfo:
@@ -97,6 +99,16 @@ class TaskManager:
                 task.updated_at = datetime.now(timezone.utc)
                 return True
             return False
+
+    def set_chapters(self, task_id: str, novel_text: NovelText) -> None:
+        """存储解析后的章节数据，供 GET /chapters 端点查询。"""
+        with self._lock:
+            self._chapters[task_id] = novel_text
+
+    def get_chapters(self, task_id: str) -> Optional[NovelText]:
+        """获取已解析的章节数据，不存在时返回 None。"""
+        with self._lock:
+            return self._chapters.get(task_id)
 
     def list_all(self) -> list[TaskInfo]:
         """列出所有任务（按创建时间倒序）。"""
