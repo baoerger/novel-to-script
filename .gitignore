@@ -14,8 +14,11 @@ venv/
 .idea/
 
 # Runtime outputs
-backend/projects/*
-!backend/projects/.gitkeep
+projects/*
+!projects/.gitkeep
+.checkpoints_*
+*.yaml
+!backend/tests/fixtures/*.yaml
 
 # OS
 .DS_Store

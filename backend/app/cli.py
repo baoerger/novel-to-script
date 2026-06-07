@@ -59,6 +59,10 @@ def main():
     output_dir = output_path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # 中间结果目录：与输出文件同目录，按书名 + task_id 命名
+    task_dir = output_dir / f".checkpoints_{novel_text.title}_{task_id}"
+    task_dir.mkdir(parents=True, exist_ok=True)
+
     start_time = time.perf_counter()
 
     if args.verbose:
@@ -68,7 +72,7 @@ def main():
                 novel_text=novel_text,
                 task_manager=task_manager,
                 task_id=task_id,
-                output_dir=output_dir,
+                output_dir=task_dir,
             )
 
         thread = threading.Thread(target=_run)
@@ -94,7 +98,7 @@ def main():
             novel_text=novel_text,
             task_manager=task_manager,
             task_id=task_id,
-            output_dir=output_dir,
+            output_dir=task_dir,
         )
 
     elapsed = time.perf_counter() - start_time
