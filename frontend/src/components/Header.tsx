@@ -9,6 +9,7 @@ export default function Header() {
         </Link>
         <nav className="flex gap-4 text-sm text-gray-600">
           <Link to="/" className="hover:text-indigo-600 transition-colors">首页</Link>
+          <Link to="/convert" className="hover:text-indigo-600 transition-colors">开始转换</Link>
         </nav>
       </div>
     </header>
