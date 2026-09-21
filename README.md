@@ -1,5 +1,17 @@
 # Novel2Script — AI 小说转剧本工具
 
+> A full-stack LLM application that converts Chinese novels into editable, structured screenplays with traceable intermediate results and quality checks.
+
+Novel2Script 把长篇小说处理拆成一条可恢复、可观察的工程流水线：文本解析与分片、逐章提取、跨章角色去重、关系图谱、场景生成、剧本组装和三维质检。YAML 作为中间数据格式，既便于机器生成，也便于人工审阅和二次编辑；React 前端提供进度、角色、场景和剧本结构的可视化入口。
+
+## 适合展示的工程能力
+
+- 中文长文本的章节识别、段落边界感知和断点续跑；
+- LLM 与启发式规则结合的角色归并和关系构建；
+- FastAPI + React + Docker 的全栈交付；
+- 结构化 YAML 输出、质量报告和可定位的问题记录；
+- Mock LLM 测试覆盖解析器、分片器、提取器、汇总器和 API。
+
 基于大语言模型（LLM）的智能小说到剧本转换工具，支持 `.txt` / `.docx` 输入，自动分章、提取角色与场景、汇总去重、生成结构化 YAML 剧本，并提供 Web 前端进行可视化交互。
 
 ---
